@@ -1,0 +1,376 @@
+body {
+	background: url("http://carpi.local/resources/Background.png");
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+}
+
+#NavBar {
+	width: 8%;
+	height: 100%;
+	position: absolute;
+	left: 0%;
+
+	background: rgba(0,0,0,.50);
+}
+
+#HomeButton {
+	position: absolute;;
+	display: block;
+	width: 90%;
+	height: 10%;
+	left: 50%;
+	transform: translate(-50%);
+	bottom: 9%;
+}
+#NavBar #BTPlayerButton {
+	position: absolute;
+	display: block;
+	width: 90%;
+	height: 10%;
+	left: 50%;
+	transform: translate(-50%);
+	top: 2.5%;
+}
+#NavBar #PhoneButton {
+	position: absolute;
+	display: block;
+	width: 90%;
+	height: 10%;
+	left: 50%;
+	transform: translate(-50%);
+	top: 15%;
+}
+#NavBar #RecentButton {
+	position: absolute;
+	display: block;
+	width: 90%;
+	height: 10%;
+	left: 50%;
+	transform: translate(-50%);
+	top: 27.5%;
+}
+
+.mdl-tabs__tab {
+	color: white;
+}
+
+#Time {
+	color: white;
+	position: absolute;
+	font-size: 400%;
+	bottom: 1.5%;
+	left: 50%;
+	transform: translate(-50%);
+
+	white-space: nowrap;
+}
+
+/*        */
+/* Notify */
+/*        */
+
+
+#NotificationHost {
+		
+}
+
+
+
+/*      */
+/* Apps */
+/*      */
+
+
+#ContentHost {
+	width: 92%;
+	height: 100%;
+	position: absolute;
+	left: 8%;
+	white-space: nowrap;
+	overflow: hidden;
+}
+.tabPage {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0px;
+	white-space: nowrap;
+	overflow: hidden;
+	color: white;
+}
+
+/* Media app */
+
+.title {
+	position: relative;
+	width: 90%;
+	left: 5%;
+	top: 21%;
+	text-align: center;
+	color: white;
+}
+.artistAlbum {
+	position: relative;
+	width: 90%;
+	left: 5%;
+	top: 29%;
+	text-align: center;
+	color: lightgray;
+}
+/*buttons*/
+.mediabutton {
+	position: absolute;
+	bottom: 35%;
+	width: 20%;
+	height: 15%;
+
+	font-size: 75px;
+
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.buttonActive {
+	box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.5), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.buttonActive:hover {
+	box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.45), 0 6px 20px 0 rgba(0, 100, 0, 0.13);
+}
+
+#previous {
+	position: absolute;
+	left: 15%;
+}
+#playpause {
+	position: absolute;
+    left: 50%;
+    transform: translate(-50%);
+}
+#next {
+	position: absolute;
+	right: 15%;
+}
+
+#seekbarCurrent {
+	position: absolute;
+	bottom: 25%;
+	left: 5%;
+	font-size:300%;
+	color: white;
+}
+#seekbar {
+	position: absolute;
+	bottom: 27.5%;
+	left: 50%;
+	width: 66.5%;
+    transform: translate(-50%);
+    height: 6px;
+}
+
+.mdl-slider__background-upper{
+	background: rgba(250,250,250,.15);
+	height: 20px;
+}
+#seekbarDuration {
+	position: absolute;
+	bottom: 25%;
+	right: 5%;
+	font-size:300%;
+	color: white;
+}
+
+.mediabutton2 {
+	position: absolute;
+	width: 10%;
+	bottom: 10%;
+	font-size: 45px;
+	height: 10%;
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+#shuffle {
+	left: 20%;
+}
+#shuffle i {
+	position: absolute;
+	top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);	
+}
+
+.buttonActiveSub {
+	background-color: rgba(50,250,50,.25);
+	box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.5), 0 6px 20px 0 rgba(0, 100, 0, 0.19);
+}
+.buttonActiveSub:hover {
+	background-color: rgba(75,250,75,.2);
+	box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.45), 0 6px 20px 0 rgba(0, 100, 0, 0.13);
+}
+
+#repeat {
+	right: 20%;
+}
+#repeat i {
+	position: absolute;
+	top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);	
+}
+
+#playerName {
+	position: absolute;
+	bottom: 11%;
+	left: 50%;
+    transform: translate(-50%);
+	color: lightgray;
+}
+
+
+/* Home */
+#homeButtons {
+	position: absolute;
+	display: block;
+	width: 90%;
+	height: 75%;
+	top: 15%;
+	left: 50%;
+	transform: translateY(-50%);
+	transform: translateX(-50%);
+}
+
+.homeButtons {
+	padding: 1%;
+	height: 15%;
+	width: 10%;
+	background-color: rgba(0,0,0,.2);
+}
+
+/*             */
+/* BT Settings */
+/*             */
+.btSettingsButton {
+	background-color: rgba(100,100,100,.2);
+	/*box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);*/
+	color: white;
+}
+.btSettingsButtonDivider {
+	width:5px;
+    height:auto;
+    display:inline-block;
+}
+.btsettingsText {
+	color: white;
+	font-size: 20px;
+}
+#BluetoothList {
+	position: absolute;
+	/*bottom: 35%;*/
+	width: 50%;
+	top: 5%;
+	bottom: 5%;
+	left: 25%;
+
+	font-size: 75px;
+
+	color: white;
+
+	background-color: rgba(100,100,100,0.2);
+
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.5), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+#BluetoothList li {
+	/*background-color: rgba(100,100,100,0.2);*/
+}
+#BTSetup {
+  border: none;
+  box-shadow: 0 9px 46px 8px rgba(0, 0, 0, 0.14), 0 11px 15px -7px rgba(0, 0, 0, 0.12), 0 24px 38px 3px rgba(0, 0, 0, 0.2);
+  width: 50%;
+  height: 25%;
+}
+.mdl-dialog__title {
+	padding: 24px 24px 0;
+	margin: 0;
+	font-size: 2.5rem;
+}
+.mdl-dialog__actions {
+    padding: 8px 8px 8px 24px;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: row-reverse;
+        -ms-flex-direction: row-reverse;
+            flex-direction: row-reverse;
+    -webkit-flex-wrap: wrap;
+        -ms-flex-wrap: wrap;
+            flex-wrap: wrap;
+}
+.mdl-dialog__actions > * {
+      margin-right: 8px;
+      height: 36px; }
+.mdl-dialog__actions > *:first-child {
+        margin-right: 0;
+}
+.mdl-dialog__actions--full-width {
+      padding: 0 0 8px 0;
+}
+.mdl-dialog__actions--full-width > * {
+        height: 48px;
+        -webkit-flex: 0 0 100%;
+            -ms-flex: 0 0 100%;
+                flex: 0 0 100%;
+        padding-right: 16px;
+        margin-right: 0;
+        text-align: right;
+}
+.mdl-dialog__content {
+    padding: 20px 24px 24px 24px;
+    color: rgba(0,0,0, 0.54);
+}
+
+.BTSetupButton {
+	background-color: rgba(0,0,0,.2);
+	/*box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);*/
+	color: black;
+}
+.BTSetupButton i {
+	color: black;
+}
+.BTSetupText {
+	color: black;
+	font-size: 20px;
+}
+
+/*       */
+/* OBDII */
+/*       */
+
+#OBDIISpeed {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-8%, -35%);
+}
+#OBDIIRpm {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-92%, -35%);
+}
+#OBDIIFuel {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-150%, -69%);
+}
+#OBDIIHeat {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -68%);
+	
+}
+#OBDIILoad {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(49%, -69%);
+}

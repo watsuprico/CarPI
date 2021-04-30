@@ -1,0 +1,909 @@
+<html>
+	<head>
+		<title>CarPI Home</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="mobile-web-app-capable" content="yes">
+
+		<link rel="stylesheet" href="resources/material.min.css">
+		<script src="resources/material.min.js"/></script>
+		<!-- <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" type="text/css"> -->
+		<link href="css/materialdesignicons.min.css" media="all" rel="stylesheet" type="text/css" />
+
+
+		<script src="resources/jquery.min.js"></script>
+		<script src="resources/jquery.keyframes.min.js"/></script>
+		<script src="resources/jquery.single_double_click.js"/></script>
+
+		<script src="resources/gauge.min.js"/></script>
+
+		<link rel="stylesheet" href="style.css">
+
+		<script>
+			var recent = null;
+			var BTDevices = JSON.parse("{}");
+			var BTDevicesSetup = BTDevices;
+			var allowBTFetch = true;
+
+			function tabMan(tabButton, tabPage) {
+				var i, tabs, tabButtons
+				if (tabPage==currentActive) { return; };
+			    $("#ContentHost div").fadeOut(200);
+				$("#NavBar #BTPlayerButton").fadeTo(150,1);
+				$("#NavBar #PhoneButton").fadeTo(150,1);
+				if (recent!=null) { $("#NavBar #RecentButton").fadeTo(150,1); }
+			    $(tabPage).fadeIn(150);
+			    $(tabPage + " div").fadeIn(150);
+			    if (tabButton!="#HomeButton")
+			    	{
+			    		if (tabButton != "#BTPlayerButton" && tabButton != "#PhoneButton")
+			    		{
+						    recent = tabButton
+							$('#RecentButton').off('click').click(function() { tabMan(tabButton,tabPage); });
+
+				    		$("#NavBar #RecentButton").fadeTo(200,0.2);
+				    		if (tabButton == "#IlluminationButton")
+				    		{
+				    			$("#NavBar #RecentButton i").attr('class','mdi mdi-led-strip mdi-36px mdi-light');
+				    		}
+				    		if (tabButton == "#OBDIIButton")
+				    		{
+				    			$("#NavBar #RecentButton i").attr('class','mdi mdi-gauge mdi-36px mdi-light');
+				    		}
+				    		if (tabButton == "#BTSettingsButton")
+				    		{
+				    			$("#NavBar #RecentButton i").attr('class','mdi mdi-bluetooth-settings mdi-36px mdi-light');
+				    			refreshBTSettings();
+				    		}
+				    		if (tabButton == "#SettingsButton")
+				    		{
+				    			$("#NavBar #RecentButton i").attr('class','mdi mdi-settings mdi-36px mdi-light');
+				    		}
+			    		}
+			    		else
+			    		{
+				    		$(tabButton).fadeTo(200,0.2);
+			    		}
+			    	} else {
+			    		recent=null
+			    	}
+
+
+			    currentActive = tabPage
+			}
+
+			var waited=0;
+			var currentActive=document.getElementById("#Home");
+
+			function sendCommand(command,callBack) {
+				var i=Math.floor(Math.random()*100); // The "id"
+				console.log("["+i+"] Sending command: "+command)
+				$.ajax({
+					// url: location.protocol + "//" + location.host + ":" + location.port + "/cgi-bin/mediaControl2CGI.py",
+					
+					// url: window.location.href + "cgi-bin/mediaControl2CGI.py", // No matter how you're connecting, just send the damn commands.
+					url: "http://carpi.local/" + "cgi-bin/mediaControl2CGI.py",
+
+					crossDomain: true,
+					type: "POST",
+					data: {command: command, port: 8002},
+					success: function(response) {
+						if (response=="") { response = "{}"; }
+						console.log("["+i+"] Response: \"" + response + "\"");
+						if (response!=null) {
+							callBack(response);
+						}
+					}
+				});
+			}
+	
+			function updateStatus() {
+				function msToTime(duration) {
+			        var milliseconds = parseInt((duration%1000)/100)
+			            , seconds = parseInt((duration/1000)%60)
+			            , minutes = parseInt((duration/(1000*60))%60)
+			            , hours = parseInt((duration/(1000*60*60))%24);
+
+			        hours = (hours > 10) ? "0" + hours : hours;
+			        minutes = (minutes > 10) ? "0" + minutes : minutes;
+			        seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+			        if (hours>0) { return hours + ":" + minutes + ":" + seconds; }
+			        else { return minutes + ":" + seconds; }
+			    };
+			    var time = new Date();
+				var minute = time.getMinutes();
+				var hour = time.getHours();
+				for (i=0; i<10; i++) { if (minute==i.toString()) { minute="0"+i.toString(); } if (hour==i.toString()) { hour="0"+i.toString(); } }
+				$('#Time').html(hour + ":" + minute);
+				console.log("Time info updated");
+
+				// Get status...
+				sendCommand("getDeviceStatus", function(response) {
+
+				});
+			}
+
+			function getOBDIICritical() {
+				if ($("#OBDII").is(":visible")) {
+					sendCommand("getOBDIISpeed", function(response) {
+						$("#OBDIISpeed").attr("data-value",response/1.609344);
+					});
+					sendCommand("getOBDIIRpm", function(response) {
+						$("#OBDIIRpm").attr("data-value",response);
+					});
+				}
+			}
+
+			function getOBDII() {
+				if ($("#OBDII").is(":visible")) {
+					sendCommand("getOBDII", function(response) {
+						var response=JSON.parse(response);
+						$("#OBDIIFuel").attr("data-value",response["FUEL_LEVEL"]);
+						$("#OBDIIHeat").attr("data-value",response["COOLANT_TEMP"]*1.8+32);
+						$("#OBDIILoad").attr("data-value",response["ENGINE_LOAD"]);
+					});
+				}
+			}
+
+			function getMediaInfo() {
+				if ($("#BTPlayer").is(":visible")) {
+					console.log("Media info being updated");
+					sendCommand("getMediaStatus",function(response) {
+						try {
+							if (response=="{}") {
+								$("#Title").html("")
+								$("#ArtistAlbum").html("Nothing playing")
+							}
+							else {
+								var response=JSON.parse(response)
+								$("#Title").html(response["title"])
+								$("#ArtistAlbum").html(response["artist"] + " - " + response["album"])
+								if (response["playerStatus"].indexOf("playing") == -1) { $("#playpause").removeClass("buttonActive"); $("#playpause i").removeClass("mdi-pause"); $("#playpause i").addClass("mdi-play");
+								} else { $("#playpause").addClass("buttonActive"); $("#playpause i").removeClass("mdi-play"); $("#playpause i").addClass("mdi-pause"); }
+
+								if (response["shuffle"].indexOf("off")!=-1) { $("#shuffle").removeClass("buttonActiveSub"); $('#shuffle .mdi-shuffle').fadeOut(150); $("#shuffle .mdi-shuffle-disabled").fadeIn(150); $("#shuffle").prop("disabled",false); }
+								else if (response["shuffle"].indexOf("sys_disabled")!=-1) { $("#shuffle").removeClass("buttonActiveSub"); $('#shuffle .mdi-shuffle').fadeOut(150); $("#shuffle .mdi-shuffle-disabled").fadeIn(150); $("#shuffle").prop('disabled',true); }
+								else { $("#shuffle").addClass("buttonActiveSub"); $('#shuffle .mdi-shuffle').fadeIn(150); $("#shuffle .mdi-shuffle-disabled").fadeOut(150); $("#shuffle").prop("disabled",false); } // Shuffle on
+
+								if (response["repeat"].indexOf("off")!=-1) { $("#repeat").removeClass("buttonActiveSub"); $('#repeat .mdi-repeat-off').fadeIn(150); $('#repeat .mdi-repeat').fadeOut(150); $('#repeat .mdi-repeat-once').fadeOut(150); $('#repeat').prop('disabled',false); }
+								else if (response["repeat"].indexOf("singletrack")!=-1) { $("#repeat").addClass("buttonActiveSub"); $('#repeat .mdi-repeat-once').fadeIn(150); $('#repeat .mdi-repeat').fadeOut(150); $('#repeat .mdi-repeat-off').fadeOut(150); $('#repeat').prop('disabled',false); }
+								else if (response["repeat"].indexOf("sys_disabled")!=-1) { $("#repeat").removeClass("buttonActiveSub"); $('#repeat .mdi-repeat-off').fadeIn(150); $('#repeat .mdi-repeat').fadeOut(150); $('#repeat .mdi-repeat-once').fadeOut(150); $('#repeat').prop('disabled',true); }
+								else { $("#repeat").addClass("buttonActiveSub"); $('#repeat .mdi-repeat').fadeIn(150); $('#repeat .mdi-repeat-once').fadeOut(150); $('#repeat .mdi-repeat-off').fadeOut(150); $('#repeat').prop('disabled',false); }
+
+								$("#seekbarCurrent").html(msToTime(response["position"]));
+								$("#seekbarDuration").html("-"+msToTime(response["duration"]-response["position"]));
+								// response["duration"]/response["position"]
+								$("#seekbar .progressbar").width(((response["position"]/response["duration"])*100).toString()+'%');
+								$("#seekbar").show()
+								$("#seekbar div").show()
+
+								$("#playerName").html("Track " + response["trackNumber"] + " out of " + response["numberOfTracks"]);
+							}
+							console.log("Media info updated");
+					 	}
+					 	catch(err) {
+					 		if (err.message == "Unexpected end of JSON input") {
+					 			$("#Title").html("")
+								$("#ArtistAlbum").html("Nothing playing")
+					 		} else
+						 		console.error(err.toString());
+					 	}
+					});
+				}				
+			}
+
+			function animateTitle() {
+				$("#Title").css('font-size',$("#BTPlayer").innerHeight()/9.7959);
+
+				if ($('#Title')[0].scrollWidth > $('#Title').innerWidth()) {
+					console.log("Title being reanimated")
+					var width = $('#Title')[0].scrollWidth-$('#Title').innerWidth()
+					$.keyframe.define([{
+						name: 'titleAnimation',
+						  '0%': { 'transform': 'translateX(0%)' },
+						  '22%': { 'transform': 'translateX(0%)' },
+						  '52%': { 'transform': 'translateX(-'+ width +'px)' },
+						  '70%': { 'transform': 'translateX(-'+ width +'px)' },
+						  '100%': { 'transform': 'translateX(0%)' }
+	  				}]);
+
+					$('#Title').playKeyframe({
+						name: 'titleAnimation',
+						duration: 8*($('#Title')[0].scrollWidth/$('#Title').innerWidth())+'s',
+						timingFunction: 'linear',
+						//iterationCount: 'infinite',
+						complete: function(){ animationWait(1); }
+					});
+				}
+			}
+
+			function animateArtistAlbum() {
+				$("#ArtistAlbum").css('font-size',$("#BTPlayer").innerHeight()/22.857);
+
+				if ($('#ArtistAlbum')[0].scrollWidth > $('#ArtistAlbum').innerWidth()) {
+					console.log("ArtistAlbum being reanimated")
+					var width = $('#ArtistAlbum')[0].scrollWidth-$('#ArtistAlbum').innerWidth()
+					$.keyframe.define([{
+						name: 'artistAlbumAnimation',
+						  '0%': { 'transform': 'translateX(0%)' },
+						  '22%': { 'transform': 'translateX(0%)' },
+						  '52%': { 'transform': 'translateX(-'+ width +'px)' },
+						  '70%': { 'transform': 'translateX(-'+ width +'px)' },
+						  '100%': { 'transform': 'translateX(0%)' }
+	  				}]);
+
+					$('#ArtistAlbum').playKeyframe({
+						name: 'artistAlbumAnimation',
+						duration: 8*($('#ArtistAlbum')[0].scrollWidth/$('#ArtistAlbum').innerWidth())+'s',
+						// delay: 2.5*($('#ArtistAlbum')[0].scrollWidth/$('#ArtistAlbum').innerWidth())+'s',
+						timingFunction: 'linear',
+						//iterationCount: 'infinite',
+						complete: function(){ animationWait(1); }
+					});
+				}
+			}
+
+			function animationWait(an) {
+				waited=waited+an
+				if (waited >=2 ) {
+					animateTitle();
+					animateArtistAlbum();
+					waited=0;
+				}
+			}
+
+			function refreshSize() {
+				animateTitle(); animateArtistAlbum();
+				$('#Time').css('font-size',$('#NavBar').innerWidth()/4);
+				$("#playerName").css('font-size',$("#BTPlayer").innerHeight()/35);
+
+				$("#OBDIISpeed").attr('data-height',$("#OBDII").innerHeight()/2);
+				$("#OBDIISpeed").attr('data-width',$("#OBDII").innerWidth()/3);
+				$("#OBDIIRpm").attr('data-height',$("#OBDII").innerHeight()/2);
+				$("#OBDIIRpm").attr('data-width',$("#OBDII").innerWidth()/3);
+			}
+
+			function addBTPhone(phoneName, phoneAlias, active) {
+				$('#'+phoneName).remove()
+				$("#BTSettings #BluetoothList").append(
+					$('<li>').attr('class','mdl-list__item').attr('id',phoneName).append(
+						$('<span>').attr('class','btsettingsText mdl-list__item-primary-content').append(phoneAlias + " (" + phoneName + ")")
+						).append(
+						$('<span>').attr('class','mdl-list__item-secondary-action').append(
+							$('<button>').attr('id',phoneName + 'ConnectButton').attr('class','btSettingsButton mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect').append(
+								$('<span>').attr('id',phoneName + 'ConnectLabel').append('Connect')
+							).append(
+								$('<i>').attr('id',phoneName + 'ConnectSpinner').attr('class','BTSpinner mdi mdi-timer-sand mdi-36px mdi-light')
+							)
+						).append(
+						$('<div>').attr('class','btSettingsButtonDivider')
+						).append(
+							$('<button>').attr('id',phoneName + 'DisconnectButton').attr('class','btSettingsButton mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect').append(
+								$('<span>').attr('id',phoneName + 'DisconnectLabel').append('Disconnect')
+							).append(
+								$('<i>').attr('id',phoneName + 'DisconnectSpinner').attr('class','BTSpinner mdi mdi-timer-sand mdi-36px mdi-light')
+							)
+						).append(
+							$('<div>').attr('class','btSettingsButtonDivider')
+						).append(
+							$('<button>').attr('id',phoneName + 'RemoveButton').attr('class','btSettingsButton mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect').append(
+								$('<span>').attr('id',phoneName + 'RemoveLabel').append('Remove')
+							).append(
+								$('<i>').attr('id',phoneName + 'RemoveSpinner').attr('class','BTSpinner mdi mdi-timer-sand mdi-36px mdi-light')
+							)
+						)
+					)
+				);
+
+				if (active==true) {
+					$('#'+phoneName+'ConnectButton').attr('disabled','true');
+				} else {
+					$('#'+phoneName+'DisconnectButton').attr('disabled','true');
+				}
+
+				$('.BTSpinner').fadeOut(0);
+
+				$('#'+phoneName+'ConnectButton').click(function(){
+					$('#'+phoneName+'ConnectLabel').fadeOut(0);
+					$('#'+phoneName+'ConnectSpinner').fadeIn(250);
+					sendCommand('btConnect'+phoneName, function(){
+						$('#'+phoneName+'ConnectButton').attr('disabled','true');
+						$('#'+phoneName+'DisconnectButton').removeAttr('disabled');
+						$('#'+phoneName+'ConnectLabel').fadeIn(250);
+						$('#'+phoneName+'ConnectSpinner').fadeOut(0);
+						refreshBTSettings();
+					});
+				});
+				$('#'+phoneName+'DisconnectButton').click(function(){
+					$('#'+phoneName+'DisconnectLabel').fadeOut(0);
+					$('#'+phoneName+'DisconnectSpinner').fadeIn(250);
+					sendCommand('btDisconnect'+phoneName, function(){
+						$('#'+phoneName+'DisconnectButton').attr('disabled','true');
+						$('#'+phoneName+'ConnectButton').removeAttr('disabled');
+						$('#'+phoneName+'DisconnectLabel').fadeIn(250);
+						$('#'+phoneName+'DisconnectSpinner').fadeOut(0);
+						refreshBTSettings();
+					});
+				});
+				$('#'+phoneName+'RemoveButton').click(function(){
+					$('#'+phoneName+'RemoveLabel').fadeOut(0);
+					$('#'+phoneName+'RemoveSpinner').fadeIn(250);
+					sendCommand('btRemove'+phoneName, function(){
+						$('#'+phoneName+'ConnectButton').attr('disabled','true');
+						$('#'+phoneName+'DisconnectButton').attr('disabled','true');
+						$('#'+phoneName+'RemoveButton').attr('disabled','true');
+						$('#'+phoneName+'RemoveLabel').fadeIn(250);
+						$('#'+phoneName+'RemoveSpinner').fadeOut(0);
+						refreshBTSettings();
+					});
+				});
+			}
+			function addBTPhoneSetup(phoneName, phoneAlias, active) {
+				if ($('#Setup'+phoneName).length != 0)
+				{
+					$('#Setup' + phoneName).remove()
+				} else {
+					var a = $('#BTSetup').height()
+					$('#BTSetup').css('height', (25 + (7.5*($("#BluetoothSetupList").length))) + '%');
+				}
+
+				$("#BTSettings #BluetoothSetupList").append(
+					$('<li>').attr('class','mdl-list__item').attr('id',"Setup" + phoneName).append(
+						$('<span>').attr('class','BTSetupText mdl-list__item-primary-content').append(
+							$('<span>').attr('class','mdl-list__item-secondary-action').append(
+								$('<button>').attr('id',"Setup" + phoneName + 'ConnectButton').attr('class','BTSetupButton mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect').append(
+									$('<span>').attr('id',"Setup" + phoneName + 'ConnectLabel').append('Connect')
+								).append(
+									$('<i>').attr('id',"Setup" + "Setup" + phoneName + 'ConnectSpinner').attr('class','BTSetupSpinner mdi mdi-dark mdi-timer-sand mdi-36px')
+								)
+							)
+						).append(phoneAlias + " (" + phoneName + ")")
+						
+					)
+				);
+
+				if (active==true) {
+					$('#Setup'+phoneName+'ConnectButton').attr('disabled','true');
+				} else {
+					$('#Setup'+phoneName+'DisconnectButton').attr('disabled','true');
+				}
+
+				$('.BTSetupSpinner').fadeOut(0);
+
+				$('#Setup'+phoneName+'ConnectButton').click(function(){
+					$('#Setup'+phoneName+'ConnectLabel').fadeOut(0);
+					$('#Setup'+phoneName+'ConnectSpinner').fadeIn(250);
+					sendCommand('btConnect'+phoneName, function(){
+						$('#Setup'+phoneName+'ConnectButton').attr('disabled','true');
+						$('#Setup'+phoneName+'ConnectLabel').fadeIn(250);
+						$('#Setup'+phoneName+'ConnectSpinner').fadeOut(0);
+						allowBTFetch = false
+						sendCommand("stopDiscovery",function() {
+							for (i in BTDevicesSetup.devices) {
+								if (BTDevicesSetup.devices[i].name != phoneName)
+								{
+									sendCommand('btRemove'+BTDevicesSetup.devices[i].name,function() {
+										refreshBTSettings();
+									});
+								}
+							};
+						});
+						var dialog = document.querySelector('#BTSetup');
+						dialog.close();
+					});
+				});
+
+			}
+
+			function refreshBTSettings() {
+				$('#BluetoothList').empty()
+				sendCommand('getDevices',function(response){
+					var response=JSON.parse(response);
+					var i = "";
+					for (i in response.devices) {
+						addBTPhone(response.devices[i].name,response.devices[i].alias,(response.devices[i].connected=="1"));
+					};
+					BTDevices = response;
+				});
+			}
+			function refreshBTSetup() {
+				sendCommand('getDevices',function(response){
+					var response=JSON.parse(response);
+					for (a in response.devices)
+					{
+						skip = false
+						for (i in BTDevices)
+						{
+							if (BTDevices.devices[i] == response.devices[a])
+							{
+								skip = true
+								break
+							}
+						}
+						if (skip!=true)
+						{
+							addBTPhoneSetup(response.devices[a].name,response.devices[a].alias,(response.devices[a].connected=="1"));
+						}
+					}
+					BTDevicesSetup = response;
+				});
+			}
+
+			function getNewBTDevices() {
+				if ($("#BTSetup").is(":visible") && allowBTFetch==true) {
+					refreshBTSetup();
+				}
+			}
+
+			var curNotificationID = 0;
+			function showToast(msg) {
+				$("#notification-host").append("<div id='notification-"+curNotificationID+"'>"+msg+"</div>");
+				curNotificationID++;
+			}
+
+			$(function() {
+				console.log("      ___           ___           ___           ___               ");
+				console.log("     /  /\\         /  /\\         /  /\\         /  /\\      ___     ");
+				console.log("    /  /:/        /  /::\\       /  /::\\       /  /::\\    /  /\\    ");
+				console.log("   /  /:/        /  /:/\\:\\     /  /:/\\:\\     /  /:/\\:\\  /  /:/    ");
+				console.log("  /  /:/  ___   /  /:/~/::\\   /  /:/~/:/    /  /:/~/:/ /__/::\\    ");
+				console.log(" /__/:/  /  /\\ /__/:/ /:/\\:\\ /__/:/ /:/___ /__/:/ /:/  \\__\\/\\:\\__ ");
+				console.log(" \\  \\:\\ /  /:/ \\  \\:\\/:/__\\/ \\  \\:\\/:::::/ \\  \\:\\/:/      \\  \\:\\/\\");
+				console.log("  \\  \\:\\  /:/   \\  \\::/       \\  \\::/~~~~   \\  \\::/        \\__\\::/");
+				console.log("   \\  \\:\\/:/     \\  \\:\\        \\  \\:\\        \\  \\:\\        /__/:/ ");
+				console.log("    \\  \\::/       \\  \\:\\        \\  \\:\\        \\  \\:\\       \\__\\/  ");
+				console.log("     \\__\\/         \\__\\/         \\__\\/         \\__\\/              ");
+
+				$('#Title').change(function(){ animateTitle(); });
+				$('#ArtistAlbum').change(function() { animateArtistAlbum(); });
+
+			    // Previous
+				$('#previous').single_double_click(function() {
+				    sendCommand("previous",function(){});
+					getMediaInfo();
+				}, function() {
+			    	sendCommand("rewind",function(){});
+			    	getMediaInfo();
+			    });
+				// Play/Pause
+				$('#playpause').click(function() {
+				    sendCommand("playpause",function(){});
+			        getMediaInfo();
+			    });
+				// Next
+				$('#next').single_double_click(function() {
+			    	sendCommand("next",function(){});
+			    	getMediaInfo();
+				}, function() {
+			    	sendCommand("fastforward",function(){});
+			    	getMediaInfo();
+			    });
+
+				// Shuffle
+				$("#shuffle").click(function() {
+					sendCommand("toggleShuffle",function(){});
+					getMediaInfo();
+				});
+				// Repeat
+				$("#repeat").click(function() {
+					sendCommand("toggleRepeat",function(){});
+					getMediaInfo();
+				});
+
+
+				$('#BTPlayerButton').click(function() { tabMan("#BTPlayerButton","#BTPlayer"); });
+				$('#PhoneButton').click(function() { tabMan("#PhoneButton","#Phone"); });
+				$('#IlluminationButton').click(function() { tabMan("#IlluminationButton","#Illumination"); });
+				$('#OBDIIButton').click(function() { tabMan("#OBDIIButton","#OBDII"); });
+
+
+				var i=5;
+				$('#OBDII button').click(function() { $('#OBDII canvas[data-type="radial-gauge"]').attr('data-value',i); i=i+5 } );
+
+				$('#HomeButton').click(function() { tabMan("#HomeButton","#Home"); });
+				$('#homeBTPlayer').click(function() { tabMan("#BTPlayerButton","#BTPlayer"); });
+				$('#homePhone').click(function() { tabMan("#PhoneButton","#Phone"); });
+				$('#homeIllumination').click(function() { tabMan("#IlluminationButton","#Illumination"); });
+				$('#homeOBDII').click(function() { tabMan("#OBDIIButton","#OBDII"); });
+				$('#homeBTSettings').click(function() { tabMan("#BTSettingsButton","#BTSettings"); });
+				$('#homeSettings').click(function() { tabMan("#SettingsButton","#Settings"); });
+
+				// Bluetooth settings
+				var dialogButton = document.querySelector('#BTSettingsSetup');
+				var dialog = document.querySelector('#BTSetup');
+				if (! dialog.showModal) {
+				  dialogPolyfill.registerDialog(dialog);
+				}
+				dialogButton.addEventListener('click', function() {
+					dialog.showModal();
+					$('#BluetoothSetupList').empty()
+					$('#BTSetup').css('height','25%')
+					sendCommand("startDiscovery",function() {
+						refreshBTSetup();
+					});
+				});
+				dialog.querySelector('button:not([disabled])')
+				.addEventListener('click', function() {
+					dialog.close();
+				});
+			    setInterval(getNewBTDevices,500);
+
+				refreshBTSettings();
+				$('#BTAutoConnect').click(function() { sendCommand('autoConnect',function() { refreshBTSettings(); }) });
+				$('#BTSettingsRefresh').click(refreshBTSettings);
+
+
+
+				getMediaInfo();
+				updateStatus();
+
+				//setInterval(updateStatus, 1500); // Time info and status messages
+			    //setInterval(getMediaInfo,1000);
+			    //setInterval(getOBDIICritical,500);
+			    //setInterval(getOBDII,1500);
+
+
+			    refreshSize();
+
+				$("#repeat .mdi-repeat").hide()
+				$("#repeat .mdi-repeat-once").hide()
+				// $("#repeat .mdi-repeat-off").hide()
+				$("#shuffle .mdi-shuffle").hide()
+
+				document.querySelector("#seekbar").addEventListener('mdl-componentupgraded', function() { this.MaterialProgress.setProgress(100); });
+				$("#seekbar").show();
+
+			    document.getElementById("HomeButton").click();
+			    $("#NavBar #RecentButton").fadeTo(0,0);
+			});
+
+			$(window).resize(refreshSize);
+		</script>
+	</head>
+
+	<body id="body">
+		<div id="NavBar">
+			<button id="BTPlayerButton" class="tabButtons mdl-button mdl-js-button">
+				<i class="mdi mdi-music-note-bluetooth mdi-36px mdi-light"></i>
+			</button>
+
+			<button id="PhoneButton" class="tabButtons mdl-button mdl-js-button">
+				<i class="mdi mdi-phone-bluetooth mdi-36px mdi-light"></i>
+			</button>
+
+			<button id="RecentButton" class="tabButtons mdl-button mdl-js-button">
+				<i class="mdi mdi-timer-sand-empty mdi-36px mdi-light"></i>
+			</button>
+
+
+			<button id="HomeButton" class="tabButtons mdl-button mdl-js-button">
+				<i class="mdi mdi-home mdi-36px mdi-light"></i>
+			</button>
+
+
+			<p id="Time">0:00</p>
+
+			<!-- <button id="HomeButton" class="tabButtons mdl-button mdl-js-button">
+				<i class="mdi mdi-home mdi-48px mdi-light"></i>
+			</button> -->
+		</div>
+
+		<div id="NotificationHost">
+
+		</div>
+
+
+		<div id="ContentHost">
+			<div id="Home" class="tabPage">
+				<center><h1 style="color: white;">Home</h1></center>
+
+				<div id="homeButtons">
+					<button id="homeBTPlayer" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-music-note-bluetooth mdi-36px mdi-light"></i>
+					</button>
+					<br/>
+					<button id="homePhone" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-phone-bluetooth mdi-36px mdi-light"></i>
+					</button>
+					<button id="homeIllumination" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-led-strip mdi-36px mdi-light"></i>
+					</button>
+					<br/>
+					<button id="homeOBDII" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-gauge mdi-36px mdi-light"></i>
+					</button>
+
+					<button id="homeBTSettings" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-bluetooth-settings mdi-36px mdi-light"></i>
+					</button>
+					<button id="homeSettings" class="homeButtons mdl-button mdl-js-button">
+						<i class="mdi mdi-settings mdi-36px mdi-light"></i>
+					</button>
+				</div>
+			</div>
+
+			<div id="BTPlayer" class="tabPage">
+				<p id="Title" class="title">Title</p>
+				<p id="ArtistAlbum" class="artistAlbum">Artist - Album</p>
+
+				<button id="previous" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-skip-previous mdi-light"></i>
+				</button>
+
+				<button id="playpause" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-play mdi-light"></i>
+				</button>
+
+				<button id="next" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-skip-next mdi-light"></i>
+				</button>
+
+				<!-- Seekbar -->
+
+				<p id="seekbarCurrent">0:00</p>
+				<div id="seekbar" class="mdl-progress mdl-js-progress"></div>
+				<p id="seekbarDuration">0:00</p>
+
+				<!-- Shuffle/Repeat -->
+
+				<button id="shuffle" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised mediabutton2">
+					<i class="mdi mdi-shuffle mdi-light"></i>
+					<i class="mdi mdi-shuffle-disabled mdi-light"></i>
+				</button>
+
+				<p id="playerName"></p>
+
+				<button id="repeat" class="mediabutton2 mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-repeat-off mdi-light"></i>
+					<i class="mdi mdi-repeat mdi-light"></i>
+					<i class="mdi mdi-repeat-once mdi-light"></i>
+				</button>
+			</div>
+
+			<div id="Phone" class="tabPage">
+				<center><h1 style="color: white;">Phone support</h1></center>
+			</div>
+
+			<div id="Illumination" class="tabPage">
+				<center><h1 style="color: white;">Underdash illumination control</h1></center>
+
+				<button id="breathing" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-pulse mdi-light"></i>
+				</button>
+				<button id="solid" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-led-variant-on mdi-light"></i>
+				</button>
+				<button id="disableLED" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-led-variant-off mdi-light"></i>
+				</button>
+			</div>
+
+			<div id="BTSettings" class="tabPage">
+				<center><h1 style="color: white;">Bluetooth Settings</h1></center>
+				<button id="BTAutoConnect" class="btsettingsbutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					Auto connect
+					<i class="mdi mdi-bluetooth-audio mdi-light"></i>
+				</button>
+				<button id="BTSettingsRefresh" class="btsettingsbutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					Refresh
+					<i class="mdi mdi-refresh mdi-light"></i>
+				</button>
+				<button id="BTSettingsSetup" class="btsettingsbutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					Setup
+					<i class="mdi mdi-magnify mdi-light"></i>
+				</button>
+
+				<dialog id="BTSetup" class="mdl-dialog">
+				  <h3 class="mdl-dialog__title">Bluetooth setup</h3>
+				  <div class="mdl-dialog__content">
+				    <ul id="BluetoothSetupList" class="mdl-list">
+					</ul>
+				  </div>
+				  <div class="mdl-dialog__actions">
+				    <button id="#BTSetupClose" type="button" class="mdl-button">Close</button>
+				  </div>
+				</dialog>
+
+
+				<ul id="BluetoothList" class="mdl-list">
+				</ul>
+
+
+				
+			</div>
+
+			<div id="Settings" class="tabPage">
+				<center><h1 style="color: white;">Settings</h1></center>
+
+				<button id="breathing" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-pulse mdi-light"></i>
+				</button>
+				<button id="solid" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-led-variant-on mdi-light"></i>
+				</button>
+				<button id="disableLED" class="mediabutton mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--raised">
+					<i class="mdi mdi-led-variant-off mdi-light"></i>
+				</button>
+			</div>
+
+			<div id="OBDII" class="tabPage">
+				<center><h1>OBDII</h1> <button id="test">Test</button></center>
+
+				<canvas id="OBDIIFuel"
+					data-type="radial-gauge"
+			        data-width="250"
+			        data-units="%"
+			        data-title="Fuel"
+			        data-value="0"
+			        data-min-value="0"
+			        data-start-angle="75"
+				    data-ticks-angle="210"
+				    data-max-value="100"
+				    data-major-ticks="0,25,50,75,100"
+			        data-minor-ticks="4"
+			        data-stroke-ticks="true"
+			        data-highlights='[
+			            { "from": 0, "to": 12.5, "color": "rgba(255,0,0,.5)" },
+			            { "from": 12.5, "to": 25, "color": "rgba(255,0,0,.25)"},
+			            { "from": 25, "to": 50, "color": "rgba(255,255,0,.15)" },
+			            { "from": 50, "to": 100, "color": "rgba(0,255,0,.15)" }
+			        ]'
+			        data-color-plate="#222"
+			        data-color-major-ticks="#f5f5f5"
+			        data-color-minor-ticks="#ddd"
+			        data-color-title="#fff"
+			        data-color-units="#ccc"
+			        data-color-numbers="#eee"
+			        data-color-needle-start="rgba(240, 128, 128, 1)"
+			        data-color-needle-end="rgba(255, 160, 122, .9)"
+			        data-value-box="false"
+			        data-animation-rule="linear"
+			        data-animation-duration="500"
+			        data-animated-value="true"
+			        data-borders="false"
+			        data-value-dec="0"
+				></canvas>
+
+				<canvas id="OBDIIHeat"
+					data-type="radial-gauge"
+			        data-width="250"
+			        data-units="&deg;F"
+			        data-title="Temp"
+			        data-value="0"
+			        data-min-value="120"
+			        data-start-angle="75"
+				    data-ticks-angle="210"
+				    data-max-value="230"
+				    data-major-ticks="120,130,140,150,160,170,180,190,200,210,220,230"
+			        data-minor-ticks="2"
+			        data-stroke-ticks="true"
+			        data-highlights='[
+			            { "from": 120, "to": 180, "color": "rgba(0,255,0,.15)" },
+			            { "from": 180, "to": 195, "color": "rgba(255,255,0,.15)" },
+			            { "from": 195, "to": 210, "color": "rgba(255,0,0,.25)"},
+			            { "from": 210, "to": 230, "color": "rgba(255,0,0,.5)" }
+			        ]'
+			        data-color-plate="#222"
+			        data-color-major-ticks="#f5f5f5"
+			        data-color-minor-ticks="#ddd"
+			        data-color-title="#fff"
+			        data-color-units="#ccc"
+			        data-color-numbers="#eee"
+			        data-color-needle-start="rgba(240, 128, 128, 1)"
+			        data-color-needle-end="rgba(255, 160, 122, .9)"
+			        data-value-box="true"
+			        data-animation-rule="linear"
+			        data-animation-duration="500"
+			        data-animated-value="true"
+			        data-borders="false"
+			        data-value-dec="0"
+				></canvas>
+
+				<canvas id="OBDIILoad"
+					data-type="radial-gauge"
+			        data-width="250"
+			        data-units="%"
+			        data-title="Load"
+			        data-value="0"
+			        data-min-value="0"
+			        data-start-angle="80"
+				    data-ticks-angle="200"
+				    data-max-value="100"
+				    data-major-ticks="0,10,20,30,40,50,60,70,80,90,100"
+			        data-minor-ticks="2"
+			        data-stroke-ticks="true"
+			        data-highlights='[
+			            { "from": 0, "to": 60, "color": "rgba(0,255,0,.15)" },
+			            { "from": 60, "to": 80, "color": "rgba(255,255,0,.15)" },
+			            { "from": 80, "to": 90, "color": "rgba(255,0,0,.25)"},
+			            { "from": 90, "to": 100, "color": "rgba(255,0,0,.5)" }
+			        ]'
+			        data-color-plate="#222"
+			        data-color-major-ticks="#f5f5f5"
+			        data-color-minor-ticks="#ddd"
+			        data-color-title="#fff"
+			        data-color-units="#ccc"
+			        data-color-numbers="#eee"
+			        data-color-needle-start="rgba(240, 128, 128, 1)"
+			        data-color-needle-end="rgba(255, 160, 122, .9)"
+			        data-value-box="false"
+			        data-animation-rule="linear"
+			        data-animation-duration="500"
+			        data-animated-value="true"
+			        data-borders="false"
+			        data-value-dec="0"
+				></canvas>
+
+
+				<canvas id="OBDIIRpm"
+					data-type="radial-gauge"
+			        data-width="400"
+			        data-units="x1000r/min"
+			        data-title="RPM"
+			        data-value="0"
+			        data-min-value="0"
+				    data-max-value="8000"
+				    data-major-ticks="0,1,2,3,4,5,6,7,8"
+			        data-minor-ticks="4"
+			        data-stroke-ticks="true"
+			        data-highlights='[
+			            { "from": 0, "to": 3500, "color": "rgba(0,255,0,.15)" },
+			            { "from": 3500, "to": 5000, "color": "rgba(255,255,0,.15)" },
+			            { "from": 5000, "to": 6500, "color": "rgba(255,0,0,.25)"},
+			            { "from": 6500, "to": 8000, "color": "rgba(255,0,0,.5)" }
+			        ]'
+			        data-color-plate="#222"
+			        data-color-major-ticks="#f5f5f5"
+			        data-color-minor-ticks="#ddd"
+			        data-color-title="#fff"
+			        data-color-units="#ccc"
+			        data-color-numbers="#eee"
+			        data-color-needle-start="rgba(240, 128, 128, 1)"
+			        data-color-needle-end="rgba(255, 160, 122, .9)"
+			        data-value-box="true"
+					data-font-value="Led"
+			        data-animation-rule="linear"
+			        data-animation-duration="500"
+			        data-animated-value="true"
+			        data-borders="false"
+			        data-value-dec="0"
+				></canvas>
+
+				<canvas id="OBDIISpeed"
+					data-type="radial-gauge"
+			        data-width="400"
+			        data-units="MPH"
+			        data-title="Speed"
+			        data-value="0"
+			        data-value-dec="0"
+			        data-min-value="0"
+				    data-max-value="140"
+				    data-major-ticks="0,10,20,30,40,50,60,70,80,90,100,110,120,130,140"
+			        data-minor-ticks="2"
+			        data-stroke-ticks="true"
+			        data-highlights='[
+			            { "from": 0, "to": 60, "color": "rgba(0,255,0,.15)" },
+			            { "from": 60, "to": 90, "color": "rgba(255,255,0,.15)" },
+			            { "from": 90, "to": 120, "color": "rgba(255,0,0,.25)" },
+			            { "from": 120, "to": 140, "color": "rgba(255,0,0,.5)" }
+			        ]'
+			        data-color-plate="#222"
+			        data-color-major-ticks="#f5f5f5"
+			        data-color-minor-ticks="#ddd"
+			        data-color-title="#fff"
+			        data-color-units="#ccc"
+			        data-color-numbers="#eee"
+			        data-color-needle-start="rgba(240, 128, 128, 1)"
+			        data-color-needle-end="rgba(255, 160, 122, .9)"
+			        data-value-box="true"
+			        data-animation-rule="linear"
+			        data-animation-duration="500"
+			        data-font-value="Led"
+			        data-animated-value="true"
+			        data-borders="false"
+				></canvas>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,12 @@
+[Unit]
+Description="CarPI OBD-II Service (Handles OBD-II requests and logging)"
+
+[Service]
+TimeoutStartSec=0
+WorkingDirectory=/var/CarPI
+ExecStart=/var/CarPI/OBD-II_Service.py
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

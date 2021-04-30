@@ -1,0 +1,45 @@
+{
+	"brightness": "1",
+	"static": {
+		"red": "5",
+		"green": "5",
+		"blue": "5"
+	},
+	"breathing": [
+		{
+			"red": "255",
+			"green": "0",
+			"blue": "0",
+			"fadeDuration": "5",
+			"timeout": "0"
+		},
+		{
+			"red": "0",
+			"green": "255",
+			"blue": "0",
+			"fadeDuration": "5",
+			"timeout": "0"
+		},
+		{
+			"red": "0",
+			"green": "0",
+			"blue": "255",
+			"fadeDuration": "5",
+			"timeout": "0"
+		}
+	],
+	"vehicle": {
+		"RPM": {
+			"enable": "true",
+			"maximum": "4000",
+			"threshold": "3000",
+			"active": "2000",
+			"timeout": "1",
+			"flashTimeout": "0.005"
+		},
+		"turnSignal": "active",
+		"brakes": "active"
+	},
+
+	"mode": "disabled"
+}

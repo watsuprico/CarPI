@@ -1,0 +1,12 @@
+[Unit]
+Description="CarPI Web Service (Handles web requests)"
+
+[Service]
+TimeoutStartSec=0
+WorkingDirectory=/var/CarPI
+ExecStart=/var/CarPI/CarPI_Web_Service.py
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
